@@ -1,0 +1,335 @@
+:root {
+  --paper: #ffffff;
+  --ink: #161616;
+  --muted: #6b6b6b;
+  --line: #e4e4e4;
+  --well: #f3f3f3;
+  --error: #b42318;
+  font-family: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; }
+
+/* ---------- header ---------- */
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 3rem clamp(1rem, 4vw, 3rem) 2rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.75rem, 8vw, 6rem);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+}
+
+.count {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+input, textarea, button {
+  font: inherit;
+  color: inherit;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+}
+
+#search { width: min(18rem, 100%); }
+
+#sort {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  cursor: pointer;
+}
+
+button {
+  padding: 0.6rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+  font-weight: 500;
+}
+
+button:disabled { opacity: 0.5; cursor: wait; }
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ---------- the wall ---------- */
+
+main { padding: 0 clamp(1rem, 4vw, 3rem) 4rem; }
+
+.status {
+  margin: 0 0 1rem;
+  color: var(--muted);
+}
+.status:empty { display: none; }
+
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.5rem;
+}
+
+.thumb {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: var(--well);
+  cursor: pointer;
+}
+
+.thumb:hover img,
+.thumb:hover .broken {
+  opacity: 0.85;
+}
+
+.thumb img,
+.thumb .broken,
+.details-image img,
+.details-image .broken {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--well);
+}
+
+.broken {
+  display: grid;
+  place-items: center;
+  padding: 0.5rem;
+  overflow: hidden;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* ---------- cover details modal ---------- */
+
+.details {
+  width: min(52rem, calc(100% - 2rem));
+}
+
+.details-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2rem;
+  padding: 1.75rem;
+}
+
+.details-info h2 {
+  margin: 0;
+  padding-right: 2rem;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.details-artist {
+  margin: 0.4rem 0 0;
+  font-size: 1.15rem;
+}
+
+.details-info dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  margin: 1.5rem 0 0;
+}
+.details-info dt { color: var(--muted); }
+.details-info dd { margin: 0; }
+
+.details-notes {
+  margin: 1.5rem 0 0;
+  max-width: 60ch;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.details-info a {
+  display: inline-block;
+  margin-top: 1.5rem;
+  color: var(--ink);
+}
+
+.close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+@media (max-width: 600px) {
+  .details-content { grid-template-columns: 1fr; }
+}
+
+/* ---------- dialog ---------- */
+
+.notice {
+  margin: -0.5rem 0 1.5rem;
+  max-width: 60ch;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.confirm input {
+  width: auto;
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+/* Off-screen instead of display:none, because some bots skip hidden fields. */
+.honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+dialog {
+  position: fixed;
+  width: min(44rem, calc(100% - 2rem));
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+}
+
+dialog::backdrop { background: rgb(0 0 0 / 0.45); }
+
+dialog form { padding: 1.5rem; }
+
+dialog h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+/* Smaller type and tighter spacing so the add-cover form fits on screen. */
+#dialog { font-size: 0.85rem; }
+#dialog .notice { margin: 0 0 1rem; }
+#dialog input,
+#dialog textarea { padding: 0.45rem 0.6rem; }
+#dialog label { font-size: 0.85rem; }
+
+.form-body {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  gap: 1.25rem;
+}
+
+.preview {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: var(--well);
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+  overflow: hidden;
+}
+.preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fields {
+  display: grid;
+  gap: 0.6rem;
+}
+
+label {
+  display: grid;
+  gap: 0.3rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.optional { color: var(--muted); font-weight: 400; }
+.label-row { display: inline; }
+
+.hint {
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.hint code {
+  font-size: 0.72rem;
+  word-break: break-all;
+}
+
+.form-error {
+  margin: 0.75rem 0 0;
+  color: var(--error);
+}
+.form-error:empty { display: none; }
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 600px) {
+  .form-body { grid-template-columns: 1fr; }
+  .preview { width: 60%; margin: 0 auto; }
+}

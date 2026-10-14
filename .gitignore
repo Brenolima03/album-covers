@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Runtime data (covers people post, ban list)
+data/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Album covers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Album covers</h1>
+      <p class="count" id="count"></p>
+    </div>
+    <div class="actions">
+      <input id="search" type="search" placeholder="Search by album or artist" aria-label="Search covers">
+      <select id="sort" aria-label="Sort covers">
+        <option value="newest">Newest added</option>
+        <option value="oldest">Oldest added</option>
+        <option value="artist">Artist (A–Z)</option>
+        <option value="album">Album (A–Z)</option>
+        <option value="release_newest">Release date (newest)</option>
+        <option value="release_oldest">Release date (oldest)</option>
+      </select>
+      <button id="open-form" class="primary" type="button">Add a cover</button>
+    </div>
+  </header>
+
+  <main>
+    <p id="status" class="status" role="status"></p>
+    <ul id="grid" class="grid"></ul>
+  </main>
+
+  <dialog id="dialog" aria-labelledby="dialog-title">
+    <form id="form" method="dialog" novalidate>
+      <h2 id="dialog-title">Add a cover</h2>
+      <p class="notice">
+        Please add real covers with accurate details. If you're unsure about
+        something, leave it blank rather than guessing.
+      </p>
+
+      <!-- Invisible to people. Bots fill every field, and filling this one gets them blocked. -->
+      <div class="honeypot" aria-hidden="true">
+        <label>
+          Website
+          <input name="website" type="text" tabindex="-1" autocomplete="off">
+        </label>
+      </div>
+
+      <div class="form-body">
+        <div class="preview" id="preview">
+          <span>Paste an image link to see it here</span>
+        </div>
+
+        <div class="fields">
+          <label>
+            Image link
+            <input name="imageUrl" type="url" required placeholder="https://…/cover.jpg">
+            <small class="hint">
+              Prefer the cover image from Spotify. On the album page, right-click
+              the cover and choose “Copy image address” — it looks like
+              <code>https://image-cdn-ak.spotifycdn.com/image/…</code>
+            </small>
+          </label>
+          <label>
+            Album title
+            <input name="title" required maxlength="200">
+          </label>
+          <label>
+            Artist or band
+            <input name="artist" required maxlength="200">
+          </label>
+          <label>
+            <span class="label-row">Release date <span class="optional">(optional)</span></span>
+            <input name="releaseDate" type="date">
+          </label>
+          <label>
+            <span class="label-row">Notes <span class="optional">(optional)</span></span>
+            <textarea name="notes" rows="3" maxlength="1000" placeholder="Label, designer, photographer, anything worth knowing"></textarea>
+          </label>
+        </div>
+      </div>
+
+      <label class="confirm">
+        <input name="confirmed" type="checkbox" required>
+        I confirm this is a real album cover and the details are true to the best of my knowledge.
+      </label>
+
+      <p id="form-error" class="form-error" role="alert"></p>
+
+      <div class="form-actions">
+        <button type="button" id="cancel">Cancel</button>
+        <button type="submit" class="primary" id="submit">Add cover</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="details" class="details" aria-labelledby="details-title">
+    <div id="details-content" class="details-content"></div>
+    <button type="button" id="details-close" class="close" aria-label="Close">×</button>
+  </dialog>
+
+  <script src="/main.js"></script>
+</body>
+</html>
