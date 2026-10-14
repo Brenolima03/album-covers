@@ -15,6 +15,7 @@ const detailsContent = document.getElementById("details-content");
 
 let covers = [];
 let formOpenedAt = 0;
+let allowSimilar = false; // set true after the user confirms a near-duplicate
 
 // ---------- rendering ----------
 
@@ -192,13 +193,24 @@ sort.addEventListener("change", render);
 
 // ---------- add-a-cover dialog ----------
 
+function resetConfirm() {
+  allowSimilar = false;
+  submitButton.textContent = "Add cover";
+}
+
 document.getElementById("open-form").addEventListener("click", () => {
   form.reset();
   formError.textContent = "";
   showPreview("");
+  resetConfirm();
   formOpenedAt = Date.now();
   dialog.showModal();
 });
+
+// If the album or artist changes after a warning, it may be a different album,
+// so drop the "add anyway" state and re-check on the next submit.
+form.elements.title.addEventListener("input", resetConfirm);
+form.elements.artist.addEventListener("input", resetConfirm);
 
 document.getElementById("cancel").addEventListener("click", () => dialog.close());
 
@@ -235,6 +247,7 @@ form.addEventListener("submit", async (event) => {
     return;
   }
   data.fillTimeMs = Date.now() - formOpenedAt;
+  if (allowSimilar) data.allowSimilar = "on";
 
   submitButton.disabled = true;
   try {
@@ -245,6 +258,13 @@ form.addEventListener("submit", async (event) => {
     });
     const body = await res.json();
     if (!res.ok) {
+      // A near-duplicate: show the warning and turn the button into a confirm.
+      if (body.needsConfirmation) {
+        allowSimilar = true;
+        formError.textContent = body.error;
+        submitButton.textContent = "Add anyway";
+        return;
+      }
       formError.textContent = body.error ?? "The cover wasn't added. Try again.";
       return;
     }

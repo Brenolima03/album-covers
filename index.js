@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'node:path';
 import * as security from './security.js';
-import { initDb, listCovers, imageExists, addCover } from './db.js';
+import { initDb, listCovers, imageExists, addCover, findDuplicate } from './db.js';
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -78,6 +78,23 @@ app.post('/api/covers', security.guardNewCover, async (req, res) => {
     if (await imageExists(imageUrl)) {
       return res.status(409).json({ error: 'This image is already on the wall.' });
     }
+
+    // Check for an existing album by normalized artist + title.
+    const dup = await findDuplicate(artist, title);
+    if (dup?.match === 'exact') {
+      return res.status(409).json({
+        error: `"${dup.cover.title}" by ${dup.cover.artist} is already on the wall.`,
+      });
+    }
+    // Similar but not identical: ask the user to confirm, unless they already did.
+    if (dup?.match === 'similar' && body.allowSimilar !== 'on') {
+      return res.status(409).json({
+        needsConfirmation: true,
+        similarTo: { title: dup.cover.title, artist: dup.cover.artist },
+        error: `This looks a lot like "${dup.cover.title}" by ${dup.cover.artist}. Add it anyway only if it's a different release.`,
+      });
+    }
+
     const cover = await addCover({
       imageUrl,
       title,

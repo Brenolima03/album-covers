@@ -26,19 +26,82 @@ export async function initDb() {
       artist       TEXT NOT NULL,
       release_date DATE,
       notes        TEXT NOT NULL DEFAULT '',
+      signature    TEXT NOT NULL DEFAULT '',
       created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `);
+  // Add the column if the table already existed from before this feature.
+  await pool.query(`ALTER TABLE covers ADD COLUMN IF NOT EXISTS signature TEXT NOT NULL DEFAULT ''`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS covers_signature_idx ON covers (signature)`);
+  // Backfill signatures for any rows added before this feature existed.
+  const { rows } = await pool.query(`SELECT id, title, artist FROM covers WHERE signature = ''`);
+  for (const r of rows) {
+    await pool.query('UPDATE covers SET signature = $1 WHERE id = $2', [
+      signatureOf(r.artist, r.title),
+      r.id,
+    ]);
+  }
 }
 
-// Turn a database row into the shape the frontend expects.
+// ---------- normalization ----------
+
+// Build a comparable "signature" from artist + title. Lowercase, strip accents
+// and punctuation, collapse spaces, drop a few leading noise words. Words like
+// "deluxe", "live" and "remastered" are KEPT on purpose, so those count as
+// different releases rather than duplicates.
+const NOISE_WORDS = new Set(['the', 'a', 'an', 'o', 'os', 'as', 'um', 'uma']);
+
+export function normalize(value) {
+  return (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')      // remove accents
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')          // punctuation -> space
+    .trim()
+    .split(' ')
+    .filter((w) => w && !NOISE_WORDS.has(w))
+    .join(' ');
+}
+
+export function signatureOf(artist, title) {
+  return `${normalize(artist)}|${normalize(title)}`;
+}
+
+// Levenshtein distance, used to catch near-misses (typos) for the warning.
+function editDistance(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const curr = [i];
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = curr;
+  }
+  return prev[b.length];
+}
+
+// Two signatures are "similar" if they're a small number of edits apart,
+// scaled to length so short names aren't over-matched.
+function isSimilar(a, b) {
+  if (a === b) return true;
+  const dist = editDistance(a, b);
+  const threshold = Math.max(1, Math.floor(Math.max(a.length, b.length) * 0.15));
+  return dist <= threshold;
+}
+
+// ---------- queries ----------
+
 function toCover(row) {
   return {
     id: row.id,
     imageUrl: row.image_url,
     title: row.title,
     artist: row.artist,
-    // release_date comes back as a Date; keep just YYYY-MM-DD, or null.
     releaseDate: row.release_date
       ? row.release_date.toISOString().slice(0, 10)
       : null,
@@ -62,14 +125,37 @@ export async function imageExists(imageUrl) {
   return rowCount > 0;
 }
 
-// $1, $2... are parameters: the values never become part of the SQL text,
-// so there's no way to inject SQL through them.
+// Returns { match: 'exact' | 'similar', cover } or null.
+// 'exact'   -> same normalized artist + title: refuse the post.
+// 'similar' -> close but not identical: warn and let the user confirm.
+export async function findDuplicate(artist, title) {
+  const sig = signatureOf(artist, title);
+
+  // Exact signature match: one indexed lookup.
+  const exact = await pool.query(
+    'SELECT * FROM covers WHERE signature = $1 LIMIT 1',
+    [sig]
+  );
+  if (exact.rowCount > 0) {
+    return { match: 'exact', cover: toCover(exact.rows[0]) };
+  }
+
+  // Similar match: compare against existing signatures for typos / variants.
+  const all = await pool.query('SELECT * FROM covers');
+  for (const row of all.rows) {
+    if (isSimilar(sig, row.signature)) {
+      return { match: 'similar', cover: toCover(row) };
+    }
+  }
+  return null;
+}
+
 export async function addCover({ imageUrl, title, artist, releaseDate, notes }) {
   const { rows } = await pool.query(
-    `INSERT INTO covers (image_url, title, artist, release_date, notes)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO covers (image_url, title, artist, release_date, notes, signature)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [imageUrl, title, artist, releaseDate, notes]
+    [imageUrl, title, artist, releaseDate, notes, signatureOf(artist, title)]
   );
   return toCover(rows[0]);
 }
